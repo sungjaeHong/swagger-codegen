@@ -106,7 +106,15 @@ export const {{classname}}FetchParamCreator = function (configuration?: Configur
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
     {{#hasFormParams}}
-            const localVarFormParams = new url.URLSearchParams();
+        {{#consumes.0}}
+            const consumesMediaType: string = '{{{mediaType}}}';
+            let localVarFormParams;
+            if (consumesMediaType === 'multipart/form-data') {
+                localVarFormParams = new FormData();
+            } else {
+                localVarFormParams = new url.URLSearchParams();
+            }
+        {{/consumes.0}}
     {{/hasFormParams}}
 
     {{#authMethods}}
@@ -192,24 +200,47 @@ export const {{classname}}FetchParamCreator = function (configuration?: Configur
             if ({{paramName}}) {
             {{#isCollectionFormatMulti}}
                 {{paramName}}.forEach((element) => {
-                    localVarFormParams.append('{{baseName}}', element as any);
+                    {{#consumes.0}}
+                        if (consumesMediaType === 'multipart/form-data') {
+                            localVarFormParams.append('{{baseName}}', element as any);
+                        } else {
+                            localVarFormParams.append('{{baseName}}', element as any);
+                        }
+                    {{/consumes.0}}
                 })
             {{/isCollectionFormatMulti}}
             {{^isCollectionFormatMulti}}
-                    localVarFormParams.set('{{baseName}}', {{paramName}}.join(COLLECTION_FORMATS["{{collectionFormat}}"]));
+                {{#consumes.0}}
+                    if (consumesMediaType === 'multipart/form-data') {
+                        localVarFormParams.append('{{baseName}}', {{paramName}}.join(COLLECTION_FORMATS["{{collectionFormat}}"]));
+                    } else {
+                        localVarFormParams.set('{{baseName}}', {{paramName}}.join(COLLECTION_FORMATS["{{collectionFormat}}"]));
+                    }
+                {{/consumes.0}}
             {{/isCollectionFormatMulti}}
             }
             {{/isListContainer}}
             {{^isListContainer}}
             if ({{paramName}} !== undefined) {
-                localVarFormParams.set('{{baseName}}', {{paramName}} as any);
+                {{#consumes.0}}
+                    if (consumesMediaType === 'multipart/form-data') {
+                        localVarFormParams.append('{{baseName}}', {{paramName}} as any);
+                    } else {
+                        localVarFormParams.set('{{baseName}}', {{paramName}} as any);
+                    }
+                {{/consumes.0}}
             }
             {{/isListContainer}}
 
     {{/formParams}}
     {{#hasFormParams}}
-            localVarHeaderParameter['Content-Type'] = 'application/x-www-form-urlencoded';
-
+        {{#consumes.0}}
+            if (consumesMediaType === 'multipart/form-data') {
+                // nothing
+            } else {
+                localVarHeaderParameter['Content-Type'] = 'application/x-www-form-urlencoded';
+            }
+        {{/consumes.0}}
     {{/hasFormParams}}
     {{#bodyParam}}
             {{^consumes}}
@@ -225,7 +256,11 @@ export const {{classname}}FetchParamCreator = function (configuration?: Configur
             delete localVarUrlObj.search;
             localVarRequestOptions.headers = Object.assign({}, localVarHeaderParameter, options.headers);
     {{#hasFormParams}}
+        if (consumesMediaType === 'multipart/form-data') {
+            localVarRequestOptions.body = localVarFormParams;
+        } else {
             localVarRequestOptions.body = localVarFormParams.toString();
+        }
     {{/hasFormParams}}
     {{#bodyParam}}
             const needsSerialization = (<any>"{{dataType}}" !== "string") || localVarRequestOptions.headers['Content-Type'] === 'application/json';
@@ -265,7 +300,17 @@ export const {{classname}}Fp = function(configuration?: Configuration) {
             return (fetch: FetchAPI = portableFetch, basePath: string = BASE_PATH) => {
                 return fetch(basePath + localVarFetchArgs.url, localVarFetchArgs.options).then((response) => {
                     if (response.status >= 200 && response.status < 300) {
-                        return response{{#returnType}}.json(){{/returnType}};
+                        {{#produces.0}}
+                            const producesMediaType: string = '{{{mediaType}}}';
+                            if (producesMediaType === 'multipart/form-data') {
+                                return response;
+                            } else {
+                                return response{{#returnType}}.json(){{/returnType}};
+                            }
+                        {{/produces.0}}
+                        {{^produces.0}}
+                            return response{{#returnType}}.json(){{/returnType}};
+                        {{/produces.0}}
                     } else {
                         throw response;
                     }
