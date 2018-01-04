@@ -170,7 +170,7 @@ public abstract class AbstractTypeScriptClientCodegen extends DefaultCodegen imp
         name = camelize(name, true);
 
         // for reserved word or word starting with number, append _
-        if (isReservedWord(name) || name.matches("^\\d.*")) {
+        if (isReservedWord(name) /*|| name.matches("^\\d.*")*/) {
             name = escapeReservedWord(name);
         }
 
