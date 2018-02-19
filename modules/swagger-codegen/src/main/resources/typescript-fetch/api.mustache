@@ -312,7 +312,7 @@ export const {{classname}}Fp = function(configuration?: Configuration) {
                             return response{{#returnType}}.json(){{/returnType}};
                         {{/produces.0}}
                     } else {
-                        throw response;
+                        return response{{#returnType}}.json(){{/returnType}};
                     }
                 });
             };
